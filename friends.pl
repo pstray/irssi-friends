@@ -13,15 +13,16 @@ $Data::Dumper::Indent = 1;
 
 # ======[ Script Header ]===============================================
 
-# Irssi Script Header 1.0
-# Name:		friends
-# Authors:	Peder Stray <peder@ninja.no>
-# URL:		http://ninja.no/irssi/friends.pl
-# License:	GPL
-# Date:		$Date: 2002/01/18 22:29:25 $
-# Version:	$Revision: 1.19 $
-# IrssiVersion:	0.7.98.CVS
-# Description:	Basicly an autoop script, with a nice interface :)
+use vars qw{$VERSION %IRSSI};
+($VERSION) = '$Revision: 1.20 $' =~ / (\d+\.\d+) /;
+%IRSSI = (
+	  name        => 'friends',
+	  authors     => 'Peder Stray',
+	  contact     => 'peder@ninja.no',
+	  url         => 'http://ninja.no/irssi/friends.pl',
+	  license     => 'GPL',
+	  description => 'Basicly an autoop script with a nice interface ;)',
+	 );
 
 # ======[ Variables ]===================================================
 
