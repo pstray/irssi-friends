@@ -154,11 +154,12 @@ sub check_friends {
 
     if (@friends) {
 	my($max) = Irssi::settings_get_int("friends_max_nicks");
+	@friends = sort @friends;
 	$channel->printformat(MSGLEVEL_CLIENTCRAP,
 			      @friends>$max
 			      ? 'friends_check_more' : 'friends_check',
-			      join(" ", sort splice @friends, 0, $max),
-			      @friends-$max);
+			      join(" ", splice @friends, 0, $max),
+			      scalar @friends);
     }
 
     if ($channel->{chanop}) {
