@@ -63,7 +63,7 @@ sub save_friends {
     my($count) = 0;
     local(*FILE);
 
-    return if $auto && !Irssi::settings_get_bool('keepnick_autosave');
+    return if $auto && !Irssi::settings_get_bool('friends_autosave');
 
     open FILE, "> $file";
     for my $mask (keys %friends) {
