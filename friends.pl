@@ -291,13 +291,15 @@ sub sig_send_command {
 		    last;
 		}
 
-		unless ($n = Irssi::chatnet_find($net)) {
+		if ($net eq '*' || $n = Irssi::chatnet_find($net)) {
+		    $net = $n->{name} if $n;
+		} else {
 		    $win->print("Error: No defined chatnet named $net",
 				MSGLEVEL_NEVER);
 		    last;
 		}
 
-		$friends[$num-1][3] = $n->{name};
+		$friends[$num-1][3] = $net;
 
 	    } elsif (/^del(ete)?$/) {
 		unless (defined $num) {
@@ -331,6 +333,10 @@ sub sig_send_command {
 		$friends[$num-1][4] = join "", sort grep {!$f{$_}++}
 		  split //, $flags;
 
+	    } elsif (/^s(ave)?/) {
+		save_friends();
+		last
+
 	    } elsif (/^(?:e(xit)?|q(uit)?)$/) {
 		$win->destroy;
 		last;
@@ -347,6 +353,7 @@ sub sig_send_command {
 	if ($changed) {
 	    update_friends_hash();
 	    update_friends_window();
+	    save_friends(1);
 	}
 
     }
