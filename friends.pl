@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.20 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.21 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -109,7 +109,7 @@ sub get_friends_window {
     if ($win) {
 	$win->set_active;
     } else {
-	Irssi::command("/window new hide");
+	Irssi::command("window new hide");
 	$win = Irssi::active_win;
 	$win->set_name('<Friends>');
 	$win->set_history('<Friends>');
@@ -168,7 +168,7 @@ sub check_friends {
 	  ($nick->{voice}?'+':'').$nick->{nick};
     }
 
-    if (@friends) {
+    if (@friends && Irssi::settings_get_int("friends_show_check")) {
 	my($max) = Irssi::settings_get_int("friends_max_nicks");
 	@friends = sort @friends;
 	$channel->printformat(MSGLEVEL_CLIENTCRAP,
@@ -547,6 +547,7 @@ sub cmd_addfriend {
 
 Irssi::settings_add_bool('friends', 'friends_autosave', 1);
 Irssi::settings_add_int('friends', 'friends_max_nicks', 10);
+Irssi::settings_add_bool('friends', 'friends_show_check', 1);
 
 # --------[ Register formats ]------------------------------------------
 
