@@ -3,7 +3,7 @@
 #
 
 use strict;
-use Irssi 20011220.1429;
+use Irssi 20020427.2353;
 use Irssi::Irc;
 use Irssi::TextUI;
 
@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.21 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.22 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -419,6 +419,30 @@ sub sig_window_changed {
     }
 }
 
+# --------[ sig_message_public ]----------------------------------------
+
+sub sig_message_public {
+    my($server, $msg, $nick, $addr, $target) = @_;
+    my($window,$theme,$friend,$oform,$nform);
+    my($channel) = $server->channel_find($target);
+
+    my($color) = Irssi::settings_get_str("friends_nick_color");
+
+    $friend = get_friend($channel, $channel->nick_find($nick));
+
+    if ($friend && $color =~ /^[rgbcmykpwRGBCMYKPWFU0-9_]$/) {
+	$window = $server->window_find_item($target);
+	$theme = $window->{theme} || Irssi::current_theme;
+
+	$oform = $nform = $theme->get_format('fe-common/core', 'pubmsg');
+	$nform =~ s/\$0/%$color\$0%n/g;
+
+	$window->command("^format pubmsg $nform");
+	Irssi::signal_continue(@_);
+	$window->command("^format pubmsg $oform");
+    }
+}
+
 # ======[ Commands ]====================================================
 
 # --------[ FRIENDS ]---------------------------------------------------
@@ -549,6 +573,8 @@ Irssi::settings_add_bool('friends', 'friends_autosave', 1);
 Irssi::settings_add_int('friends', 'friends_max_nicks', 10);
 Irssi::settings_add_bool('friends', 'friends_show_check', 1);
 
+Irssi::settings_add_str('friends', 'friends_nick_color', '');
+
 # --------[ Register formats ]------------------------------------------
 
 Irssi::theme_register(
@@ -585,6 +611,8 @@ Irssi::signal_add('setup saved', 'sig_setup_save');
 Irssi::signal_add('setup reread', 'sig_setup_reread');
 
 Irssi::signal_add('window changed', 'sig_window_changed');
+
+Irssi::signal_add_first('message public', 'sig_message_public');
 
 # --------[ Register commands ]-----------------------------------------
 
