@@ -138,6 +138,8 @@ sub check_friends {
     my($nick,$friend,$list);
     my(@friends);
 
+    return unless $channel->{chanop};
+
     for $nick (@nicks) {
 	$friend = get_friend($channel, $nick);
 	next unless $friend;
@@ -360,8 +362,7 @@ sub sig_massjoin {
 
 sub sig_nick_mode_changed {
     my($channel, $nick) = @_;
-    if ($channel->{synced} && $nick->{op} &&
-	$channel->{server}{nick} eq $nick->{nick}) {
+    if ($channel->{synced} && $channel->{server}{nick} eq $nick->{nick}) {
 	check_friends($channel, $channel->nicks);
     }
 }
@@ -370,9 +371,7 @@ sub sig_nick_mode_changed {
 
 sub sig_channel_sync {
     my($channel) = @_;
-    if ($channel->{chanop}) {
-	check_friends($channel, $channel->nicks);
-    }
+    check_friends($channel, $channel->nicks);
 }
 
 # --------[ sig_setup_reread ]------------------------------------------
