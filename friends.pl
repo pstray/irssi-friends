@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.28 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.29 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -354,7 +354,7 @@ sub sig_message_public {
 	$theme = $window->{theme} || Irssi::current_theme;
 
 	$oform = $nform = $theme->get_format('fe-common/core', 'pubmsg');
-	$nform =~ s/\$0/%$color\$0%n/g;
+	$nform =~ s/(\$(\[-?\d+\])?0)/%$color$1%n/g;
 
 	$window->command("^format pubmsg $nform");
 	Irssi::signal_continue(@_);
@@ -381,7 +381,7 @@ sub sig_message_irc_action {
 
 	$oform = $nform = $theme->get_format('fe-common/irc',
 					     'action_public');
-	$nform =~ s/\$0/%$color\$0%n/g;
+	$nform =~ s/(\$(\[-?\d+\])?0)/%$color$1%n/g;
 
 	$window->command("^format action_public $nform");
 	Irssi::signal_continue(@_);
