@@ -157,8 +157,8 @@ sub check_friends {
 	$channel->printformat(MSGLEVEL_CLIENTCRAP,
 			      @friends>$max
 			      ? 'friends_check_more' : 'friends_check',
-			      join(" ", sort splice @friends, 0, $max-1),
-			      $max);
+			      join(" ", sort splice @friends, 0, $max),
+			      @friends-$max);
     }
 
     if ($channel->{chanop}) {
@@ -522,8 +522,8 @@ sub cmd_addfriend {
 
 # --------[ Register settings ]-----------------------------------------
 
-Irssi::settings_add_bool('misc', 'friends_autosave', 1);
-Irssi::settings_add_bool('misc', 'friends_max_nicks', 10);
+Irssi::settings_add_bool('friends', 'friends_autosave', 1);
+Irssi::settings_add_int('friends', 'friends_max_nicks', 10);
 
 # --------[ Register formats ]------------------------------------------
 
