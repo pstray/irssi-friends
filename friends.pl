@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.29 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.30 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -169,7 +169,7 @@ sub check_friends {
 	  ($nick->{voice}?'+':'').$nick->{nick};
     }
 
-    if (@friends && Irssi::settings_get_int("friends_show_check")) {
+    if (@friends && Irssi::settings_get_bool("friends_show_check")) {
 	my($max) = Irssi::settings_get_int("friends_max_nicks");
 	@friends = sort @friends;
 	$channel->printformat(MSGLEVEL_CLIENTCRAP,
