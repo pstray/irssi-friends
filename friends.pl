@@ -160,6 +160,39 @@ sub check_friends {
     }
 }
 
+# --------[ update_friends_window ]-------------------------------------
+
+sub update_friends_window {
+    my($win) = Irssi::window_find_name('<Friends>');
+    my($view,$num);
+    my($mask,$net,$channel,$flags);
+    @friends = ();
+
+    if ($win) {
+	$view = $win->view;
+	$num = 0;
+
+	for $mask (sort keys %friends) {
+	    for $net (sort keys %{$friends{$mask}}) {
+		for $channel (sort keys %{$friends{$mask}{$net}}) {
+		    $flags = join "", sort map { substr $_,0,1 }
+		      keys %{$friends{$mask}{$net}{$channel}};
+		    push @friends, [ ++$num, $mask, $channel, $net, $flags ];
+		}
+	    }
+	}
+
+	$view->remove_all_lines();
+	$view->clear();
+	$win->printformat(MSGLEVEL_NEVER, 'friends_header',
+			  '##', 'Mask', 'Channel', 'ChatNet', 'Flags');
+	for (@friends) {
+	    $win->printformat(MSGLEVEL_NEVER, 'friends_line', @$_);
+	}
+	$win->printformat(MSGLEVEL_NEVER, 'friends_footer', scalar @friends);
+    }
+}
+
 # ======[ Signal Hooks ]================================================
 
 # --------[ sig_send_command ]------------------------------------------
@@ -167,18 +200,44 @@ sub check_friends {
 sub sig_send_command {
     my($win) = Irssi::active_win;
     if (is_friends_window($win)) {
+	my($cmd,$num,@param) = split " ", $_[0];
+	my($changed) = 0;
 
-	my($cmd,@param) = split " ", $_[0];
-	$win->print("CMD: $cmd @param");
+	$win->print("CMD: $cmd {$num} @param");
 
-	if (lc $cmd eq 'exit') {
-	    $win->print('exit in 5...');
-	    $win->destroy;
-	} else {
-	    return;
+	for (lc $cmd) {
+	    s,^/,,;
+	    if (/^m(ask)?$/) {
+		unless (defined $num) {
+		    $win->print("MASK <num> <mask>", MSGLEVEL_NEVER);
+		}
+
+		if ($num < @friends) {
+
+		} else {
+
+		}
+
+	    } elsif (/^c(han(nel)?)?$/) {
+
+	    } elsif (/^(?:n(et)?|i(rc(net)?)?)$/) {
+
+	    } elsif (/^d(el(ete)?)?$/) {
+
+	    } elsif (/^f(lags?)?$/) {
+
+	    } elsif (/^(?:e(xit)?|q(uit)?)$/) {
+		$win->destroy;
+
+	    } else {
+		return;
+
+	    }
 	}
-
 	Irssi::signal_stop;
+	update_friends_window()
+	  if $changed;
+
     }
 }
 
@@ -244,30 +303,7 @@ sub sig_window_changed {
 # Usage: /FRIENDS
 sub cmd_friends {
     my($win) = get_friends_window;
-    my($view) = $win->view;
-    my($num) = 0;
-
-    @friends = ();
-    for my $mask (sort keys %friends) {
-	for my $net (sort keys %{$friends{$mask}}) {
-	    for my $channel (sort keys %{$friends{$mask}{$net}}) {
-		my $flags = join "", sort map { substr $_,0,1 }
-		  keys %{$friends{$mask}{$net}{$channel}};
-		push @friends, [ ++$num, $mask, $channel, $net, $flags ];
-	    }
-	}
-    }
-
-    $view->remove_all_lines();
-    $view->clear();
-
-    $win->printformat(MSGLEVEL_NEVER, 'friends_header',
-		      '##', 'Mask', 'Channel', 'ChatNet', 'Flags');
-    for (@friends) {
-	$win->printformat(MSGLEVEL_NEVER, 'friends_line', @$_);
-    }
-    $win->printformat(MSGLEVEL_NEVER, 'friends_footer', scalar @friends);
-
+    update_friends_window();
 }
 
 # --------[ ADDFRIEND ]-------------------------------------------------
