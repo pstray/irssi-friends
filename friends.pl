@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.25 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.26 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -248,7 +248,7 @@ sub update_friends_window {
 sub sig_send_command {
     my($win) = Irssi::active_win;
     if (is_friends_window($win)) {
-	my($cmd,$num,@param) = split " ", $_[0];
+	my($cmd,@param) = split " ", $_[0];
 	my($changed) = 0;
 
 	Irssi::signal_stop;
@@ -256,114 +256,33 @@ sub sig_send_command {
 	for (lc $cmd) {
 	    s,^/,,;
 	    if (/^m(ask)?$/) {
-		my($mask) = @param;
-		unless ($mask && defined $num) {
-		    $win->print("Syntax: MASK <num> <mask>", MSGLEVEL_NEVER);
-		    last;
-		}
-
-		unless (0 < $num && $num <= @friends) {
-		    $win->print("Error: Element $num not in list",
-				MSGLEVEL_NEVER);
-		    last;
-		}
-
-		unless ($mask =~ /^.+!.+@.+$/) {
-		    $win->print("Error: Mask $mask is not valid",
-				MSGLEVEL_NEVER);
-		    last;
-		}
-
-		$friends[$num-1][1] = $mask;
+		$changed = subcmd_friends_mask($win,@param);
 
 	    } elsif (/^c(han(nel)?)?$/) {
-		my($chan) = @param;
-		unless ($chan && defined $num) {
-		    $win->print("Syntax: CHANNEL <num> <channel>", MSGLEVEL_NEVER);
-		    last;
-		}
-
-		unless (0 < $num && $num <= @friends) {
-		    $win->print("Error: Element $num not in list",
-				MSGLEVEL_NEVER);
-		    last;
-		}
-
-		$friends[$num-1][2] = $chan;
+		$changed = subcmd_friends_channel($win,@param);
 
 	    } elsif (/^(?:n(et)?|chat(net)?)$/) {
-		my($net) = @param;
-		my($n);
-		unless ($net && defined $num) {
-		    $win->print("Syntax: NET <num> <net>", MSGLEVEL_NEVER);
-		    last;
-		}
-
-		unless (0 < $num && $num <= @friends) {
-		    $win->print("Error: Element $num not in list",
-				MSGLEVEL_NEVER);
-		    last;
-		}
-
-		if ($net eq '*') {
-		    # all is well
-		} elsif ($n = Irssi::chatnet_find($net)) {
-		    $net = $n->{name};
-		} else {
-		    $win->print("Error: No defined chatnet named $net",
-				MSGLEVEL_NEVER);
-		    last;
-		}
-
-		$friends[$num-1][3] = $net;
+		$changed = subcmd_friends_net($win,@param);
 
 	    } elsif (/^del(ete)?$/) {
-		unless (defined $num) {
-		    $win->print("Syntax: DELETE <num>", MSGLEVEL_NEVER);
-		    last;
-		}
-
-		unless (0 < $num && $num <= @friends) {
-		    $win->print("Error: Element $num not in list",
-				MSGLEVEL_NEVER);
-		    last;
-		}
-
-		splice @friends, $num-1, 1;
+		$changed = subcmd_friends_delete($win,@param);
 
 	    } elsif (/^f(lags?)?$/) {
-		my($flags) = @param;
-		my(%f);
-
-		unless (defined $num) {
-		    $win->print("Syntax: DELETE <num>", MSGLEVEL_NEVER);
-		    last;
-		}
-
-		unless (0 < $num && $num <= @friends) {
-		    $win->print("Error: Element $num not in list",
-				MSGLEVEL_NEVER);
-		    last;
-		}
-
-		$friends[$num-1][4] = join "", sort grep {!$f{$_}++}
-		  split //, $flags;
+		$changed = subcmd_friends_flags($win,@param);
 
 	    } elsif (/^s(ave)?/) {
 		save_friends();
-		last
 
 	    } elsif (/^(?:e(xit)?|q(uit)?)$/) {
 		$win->destroy;
-		last;
+
+	    } elsif (/^(?:h(elp)?|\?)$/) {
+		subcmd_friends_help($win);
 
 	    } else {
-		$win->print("CMD: $cmd @{[map{\"[$_]\"}$num,@param]}");
-		last;
+		$win->print("CMD: $cmd @{[map{\"[$_]\"}@param]}");
 
 	    }
-
-	    $changed = 1;
 	}
 
 	if ($changed) {
@@ -371,7 +290,6 @@ sub sig_send_command {
 	    update_friends_window();
 	    save_friends(1);
 	}
-
     }
 }
 
@@ -452,6 +370,153 @@ sub sig_message_public {
 sub cmd_friends {
     my($win) = get_friends_window;
     update_friends_window();
+}
+
+# --------[ subcmd_friends_channel ]------------------------------------
+
+sub subcmd_friends_channel {
+    my($win,$num,$chan) = @_;
+
+    unless ($chan && defined $num) {
+	$win->print("Syntax: CHANNEL <num> <channel>", MSGLEVEL_NEVER);
+	return;
+    }
+
+    unless (0 < $num && $num <= @friends) {
+	$win->print("Error: Element $num not in list", MSGLEVEL_NEVER);
+	return;
+    }
+
+    $friends[$num-1][2] = $chan;
+
+    return 1;
+}
+
+# --------[ subcmd_friends_delete ]-------------------------------------
+
+sub subcmd_friends_delete {
+    my($win,$num) = @_;
+
+    unless (defined $num) {
+	$win->print("Syntax: DELETE <num>", MSGLEVEL_NEVER);
+	return;
+    }
+
+    unless (0 < $num && $num <= @friends) {
+	$win->print("Error: Element $num not in list", MSGLEVEL_NEVER);
+	return;
+    }
+
+    splice @friends, $num-1, 1;
+
+    return 1;
+}
+
+# --------[ subcmd_friends_flags ]--------------------------------------
+
+sub subcmd_friends_flags {
+    my($win,$num,$flags) = @_;
+    my(%f);
+
+    unless ($flags && defined $num) {
+	$win->print("Syntax: FLAGS <num> <flags>", MSGLEVEL_NEVER);
+	return;
+    }
+
+    unless (0 < $num && $num <= @friends) {
+	$win->print("Error: Element $num not in list", MSGLEVEL_NEVER);
+	return;
+    }
+
+    $friends[$num-1][4] = join "", sort grep {!$f{$_}++}
+      split //, $flags;
+
+    return 1;
+}
+
+# --------[ subcmd_friends_help ]---------------------------------------
+
+sub subcmd_friends_help {
+    my($win) = @_;
+
+    $win->print(q{CHANNEL <num> <channel>    - set channel
+
+    <channel> is either a channel name or * for all
+}, MSGLEVEL_NEVER);
+
+    $win->print(q{DELETE  <num>              - delete entry
+}, MSGLEVEL_NEVER);
+
+    $win->print(q{FLAGS   <num> <flags>      - set flags
+
+    <flags> is a list of c (color), o (give op), v (give voice)
+}, MSGLEVEL_NEVER);
+
+    $win->print(q{MASK    <num> <mask>       - set mask
+
+    <mask> is in the usual nick!user@host format
+}, MSGLEVEL_NEVER);
+
+    $win->print(q{NET     <num> <net>        - set net
+
+   <net> is one of your defined ircnets or * for all
+}, MSGLEVEL_NEVER);
+
+}
+
+# --------[ subcmd_friends_mask ]---------------------------------------
+
+sub subcmd_friends_mask {
+    my($win, $num, $mask) = @_;
+
+    unless ($mask && defined $num) {
+	$win->print("Syntax: MASK <num> <mask>", MSGLEVEL_NEVER);
+	return;
+    }
+
+    unless (0 < $num && $num <= @friends) {
+	$win->print("Error: Element $num not in list", MSGLEVEL_NEVER);
+	return;
+    }
+
+    unless ($mask =~ /^.+!.+@.+$/) {
+	$win->print("Error: Mask $mask is not valid", MSGLEVEL_NEVER);
+    }
+
+    $friends[$num-1][1] = $mask;
+
+    return 1;
+}
+
+# --------[ subcmd_friends_net ]----------------------------------------
+
+sub subcmd_friends_net {
+    my($win,$num,$net) = @_;
+    my($n);
+
+    unless ($net && defined $num) {
+	$win->print("Syntax: NET <num> <net>", MSGLEVEL_NEVER);
+	return;
+    }
+
+    unless (0 < $num && $num <= @friends) {
+	$win->print("Error: Element $num not in list", MSGLEVEL_NEVER);
+	return;
+    }
+
+    if ($net eq '*') {
+	# all is well
+    } elsif ($n = Irssi::chatnet_find($net)) {
+	$net = $n->{name};
+    } else {
+	$win->print("Error: No defined chatnet named $net",
+		    MSGLEVEL_NEVER);
+	return;
+    }
+
+    $friends[$num-1][3] = $net;
+
+    return 1;
 }
 
 # --------[ ADDFRIEND ]-------------------------------------------------
