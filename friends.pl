@@ -226,7 +226,7 @@ sub cmd_friends {
 		my $flags = join "", sort map { substr $_,0,1 }
 		  keys %{$friends{$mask}{$net}{$channel}};
 		Irssi::print(sprintf(
-				     "[%%R%02d%%R] %-30s %-15s %-15s %s",
+				     "[%%R%02d%%n] %-30s %-15s %-15s %s",
 				     ++$num, $mask, $channel, $net, $flags
 				    ), MSGLEVEL_NEVER);
 	    }
