@@ -3,7 +3,7 @@
 #
 
 use strict;
-use Irssi 20011220.1429;
+use Irssi 20011220;
 use Irssi::Irc;
 use Irssi::TextUI;
 use Data::Dumper;
@@ -152,8 +152,14 @@ sub check_friends {
 	  ($nick->{voice}?'+':'').$nick->{nick};
     }
 
-    $channel->printformat(MSGLEVEL_CLIENTCRAP, 'friends_check', "@friends")
-      if @friends;
+    if (@friends) {
+	my($max) = Irssi::settings_get_int("friends_max_nicks");
+	$channel->printformat(MSGLEVEL_CLIENTCRAP,
+			      @friends>$max
+			      ? 'friends_check_more' : 'friends_check',
+			      join(" ", sort splice @friends, 0, $max-1),
+			      $max);
+    }
 
     if ($channel->{chanop}) {
 	if ($list = join " ", sort keys %op) {
@@ -185,6 +191,8 @@ sub update_friends_window {
     my($num) = 0;
     my($mask,$net,$channel,$flags);
 
+    my(%net);
+
     if ($win) {
 	@friends = ();
 	for $mask (sort keys %friends) {
@@ -203,7 +211,13 @@ sub update_friends_window {
 	$win->printformat(MSGLEVEL_NEVER, 'friends_header',
 			  '##', 'Mask', 'Channel', 'ChatNet', 'Flags');
 	for (@friends) {
-	    $win->printformat(MSGLEVEL_NEVER, 'friends_line', @$_);
+	    ($num,$mask,$channel,$net,$flags) = @$_;
+	    if (!$net{$net}) {
+		my($n) = Irssi::chatnet_find($net);
+		$net{$net} = $n?$n->{name}:$net;
+	    }
+	    $win->printformat(MSGLEVEL_NEVER, 'friends_line',
+			      $num, $mask, $channel, $net{$net}, $flags);
 	}
 	$win->printformat(MSGLEVEL_NEVER, 'friends_footer', scalar @friends);
     }
@@ -261,6 +275,7 @@ sub sig_send_command {
 
 	    } elsif (/^(?:n(et)?|chat(net)?)$/) {
 		my($net) = @param;
+		my($n);
 		unless ($net && defined $num) {
 		    $win->print("Syntax: NET <num> <net>", MSGLEVEL_NEVER);
 		    last;
@@ -272,7 +287,13 @@ sub sig_send_command {
 		    last;
 		}
 
-		$friends[$num-1][3] = $net;
+		unless ($n = Irssi::chatnet_find($net)) {
+		    $win->print("Error: No defined chatnet named $net",
+				MSGLEVEL_NEVER);
+		    last;
+		}
+
+		$friends[$num-1][3] = $n->{name};
 
 	    } elsif (/^del(ete)?$/) {
 		unless (defined $num) {
@@ -291,6 +312,7 @@ sub sig_send_command {
 	    } elsif (/^f(lags?)?$/) {
 		my($flags) = @param;
 		my(%f);
+
 		unless (defined $num) {
 		    $win->print("Syntax: DELETE <num>", MSGLEVEL_NEVER);
 		    last;
@@ -337,9 +359,8 @@ sub sig_massjoin {
 
 sub sig_nick_mode_changed {
     my($channel, $nick) = @_;
-    if ($channel->{synced} &&
-	$channel->{server}{nick} eq $nick->{nick} &&
-	$nick->{op}) {
+    if ($channel->{synced} && $nick->{op} &&
+	$channel->{server}{nick} eq $nick->{nick}) {
 	check_friends($channel, $channel->nicks);
     }
 }
@@ -368,7 +389,6 @@ sub sig_setup_save {
 
 # --------[ sig_window_changed ]----------------------------------------
 
-# just a hack until we get named history_lists
 sub sig_window_changed {
     my($new,$old) = @_;
     if (is_friends_window($new)) {
@@ -503,6 +523,7 @@ sub cmd_addfriend {
 # --------[ Register settings ]-----------------------------------------
 
 Irssi::settings_add_bool('misc', 'friends_autosave', 1);
+Irssi::settings_add_bool('misc', 'friends_max_nicks', 10);
 
 # --------[ Register formats ]------------------------------------------
 
@@ -513,6 +534,9 @@ Irssi::theme_register(
 
  'friends_check',
  '{line_start}{hilight Friends} checked: $0',
+
+ 'friends_check_more',
+ '{line_start}{hilight Friends} checked: $0 (+$1 more)',
 
  'friends_header',
  '<%W$[2]0%n> <%W$[33]1%n> <%W$[13]2%n> <%W$[13]3%n> <%W$[5]4%n>',
