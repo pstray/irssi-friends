@@ -214,6 +214,8 @@ sub sig_send_command {
 	my($cmd,$num,@param) = split " ", $_[0];
 	my($changed) = 0;
 
+	Irssi::signal_stop;
+
 	for (lc $cmd) {
 	    s,^/,,;
 	    if (/^m(ask)?$/) {
@@ -304,14 +306,13 @@ sub sig_send_command {
 
 	    } else {
 		$win->print("CMD: $cmd @{[map{\"[$_]\"}$num,@param]}");
-		return;
+		last;
 
 	    }
 
 	    $changed = 1;
 	}
 
-	Irssi::signal_stop;
 	if ($changed) {
 	    update_friends_hash();
 	    update_friends_window();
