@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2001-2002 by Peder Stray <peder@ninja.no>
+# Copyright (C) 2001-2003 by Peder Stray <peder@ninja.no>
 #
 
 use strict;
@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.30 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.33 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -344,6 +344,8 @@ sub sig_message_public {
     my($server, $msg, $nick, $addr, $target) = @_;
     my($window,$theme,$friend,$oform,$nform);
     my($channel) = $server->channel_find($target);
+
+    return unless $channel;
 
     my($color) = Irssi::settings_get_str("friends_nick_color");
 
