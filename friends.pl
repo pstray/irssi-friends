@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.24 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.25 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -31,6 +31,7 @@ my(%friends, @friends);
 my(%flagshort) = (
 		  op => 'o',
 		  voice => 'v',
+		  color => 'c',
 		 );
 my(%flaglong) = map { $flagshort{$_} => $_ } keys %flagshort;
 
@@ -492,7 +493,7 @@ sub cmd_addfriend {
     ($mask,$channel,$net) = @param;
 
     unless ($mask) {
-	crap("/ADDFRIEND [-mask full|normal|host|domain] [-flags <[o][v]>] <nick|mask> [<channel> [<chatnet>]]]");
+	crap("/ADDFRIEND [-mask full|normal|host|domain] [-flags <[o][v][c]>] <nick|mask> [<channel> [<chatnet>]]]");
 	return;
     }
 
