@@ -14,14 +14,14 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.23 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.24 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
 	  contact     => 'peder@ninja.no',
 	  url         => 'http://ninja.no/irssi/friends.pl',
 	  license     => 'GPL',
-	  description => 'Basicly an autoop script with a nice interface ;)',
+	  description => 'Basicly an autoop script with a nice interface and nick coloring ;)',
 	 );
 
 # ======[ Variables ]===================================================
