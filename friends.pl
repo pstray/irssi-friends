@@ -291,8 +291,10 @@ sub sig_send_command {
 		    last;
 		}
 
-		if ($net eq '*' || $n = Irssi::chatnet_find($net)) {
-		    $net = $n->{name} if $n;
+		if ($net eq '*') {
+		    # all is well
+		} elsif ($n = Irssi::chatnet_find($net)) {
+		    $net = $n->{name};
 		} else {
 		    $win->print("Error: No defined chatnet named $net",
 				MSGLEVEL_NEVER);
