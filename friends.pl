@@ -16,6 +16,12 @@ my(%friends, @friends);
 
 my $window_history;	# to save the original value
 
+my(%flagshort) = (
+		  op => 'o',
+		  voice => 'v',
+		 );
+my(%flaglong) = map { $flagshort{$_} => $_ } keys %flagshort;
+
 # ======[ Helper functions ]============================================
 
 # --------[ crap ]------------------------------------------------------
@@ -31,14 +37,17 @@ sub crap {
 sub load_friends {
     my($file) = Irssi::get_irssi_dir."/friends";
     my($count) = 0;
+    my($mask,$net,$channel,$flags,$flag);
     local(*FILE);
 
     %friends = ();
     open FILE, "< $file";
     while (<FILE>) {
-	my($mask,$net,$channel,@flags) = split;
-	for (@flags) {
-	    $friends{$mask}{lc $net}{lc $channel}{$_} = 1;
+	($mask,$net,$channel,$flags) = split;
+	for (split //, $flags) {
+	    if ($flag = $flaglong{$_}) {
+		$friends{$mask}{lc $net}{lc $channel}{$flag} = 1;
+	    }
 	}
     }
     close FILE;
@@ -63,7 +72,7 @@ sub save_friends {
 	for my $net (keys %{$friends{$mask}}) {
 	    for my $channel (keys %{$friends{$mask}{$net}}) {
 		print FILE "$mask\t$net\t$channel\t".
-		  join(" ", sort keys %{$friends{$mask}{$net}{$channel}}).
+		  join("", sort map {$flagshort{$_}} keys %{$friends{$mask}{$net}{$channel}}).
 		    "\n";
 	    }
 	}
@@ -150,11 +159,15 @@ sub check_friends {
     $channel->printformat(MSGLEVEL_CLIENTCRAP, 'friends_check', "@friends")
       if @friends;
 
+    $channel->print("Status: [$channel->{chanop}]");
+
     if ($channel->{chanop}) {
 	if ($list = join " ", sort keys %op) {
+	    $channel->print("Op [$list]");
 	    $channel->command("op $list");
 	}
 	if ($list = join " ", sort keys %voice) {
+	    $channel->print("Voice [$list]");
 	    $channel->command("voice $list");
 	}
     }
@@ -167,7 +180,7 @@ sub update_friends_hash {
     for (@friends) {
 	my($num,$mask,$chan,$net,$flags) = @$_;
 	for (split //, $flags) {
-	    $friends{$mask}{$net}{$chan}{$_} = 1;
+	    $friends{$mask}{$net}{$chan}{$flaglong{$_}} = 1;
 	}
     }
 }
@@ -185,7 +198,7 @@ sub update_friends_window {
 	for $mask (sort keys %friends) {
 	    for $net (sort keys %{$friends{$mask}}) {
 		for $channel (sort keys %{$friends{$mask}{$net}}) {
-		    $flags = join "", sort map { substr $_,0,1 }
+		    $flags = join "", sort map {$flagshort{$_}}
 		      keys %{$friends{$mask}{$net}{$channel}};
 		    push @friends, [ ++$num, $mask, $channel, $net, $flags ];
 		}
@@ -400,9 +413,9 @@ sub cmd_addfriend {
     my(@split) = split " ", $param;
 
     while (@split) {
-	$_ = shift;
+	$_ = shift @split;
 	if (/^-m(ask)?$/) {
-	    $_ = shift;
+	    $_ = shift @split;
 	    if (/^h(ost)?$/) {
 		$type = Irssi::Irc::MASK_HOST;
 	    } elsif (/^n(ormal)?$/) {
@@ -418,7 +431,7 @@ sub cmd_addfriend {
 		# fjekk
 	    }
 	} elsif (/^-flags$/) {
-	    $flags = shift;
+	    $flags = shift @split;
 	} else {
 	    push @param, $_;
 	}
@@ -483,11 +496,7 @@ sub cmd_addfriend {
     }
 
     for my $flag (split //, $flags) {
-	if ($flag eq 'o') {
-	    $flag = 'op';
-	} elsif ($flag eq 'v') {
-	    $flag = 'voice';
-	} else {
+	unless ($flag = $flaglong{$flag}) {
 	    crap("Unknown flag [$flag]");
 	    next;
 	}
