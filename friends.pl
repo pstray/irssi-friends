@@ -14,8 +14,6 @@ $Data::Dumper::Indent = 1;
 
 my(%friends, @friends);
 
-my $window_history;	# to save the original value
-
 my(%flagshort) = (
 		  op => 'o',
 		  voice => 'v',
@@ -97,12 +95,10 @@ sub get_friends_window {
     if ($win) {
 	$win->set_active;
     } else {
-	$window_history = Irssi::settings_get_bool("window_history");
 	Irssi::command("/window new hide");
 	$win = Irssi::active_win;
 	$win->set_name('<Friends>');
-	Irssi::settings_set_bool("window_history", 1);
-	Irssi::signal_emit("setup changed");
+	$win->set_history('<Friends>');
     }
     return $win;
 }
@@ -278,7 +274,7 @@ sub sig_send_command {
 
 		$friends[$num-1][3] = $net;
 
-	    } elsif (/^d(el(ete)?)?$/) {
+	    } elsif (/^del(ete)?$/) {
 		unless (defined $num) {
 		    $win->print("Syntax: DELETE <num>", MSGLEVEL_NEVER);
 		    last;
@@ -375,15 +371,9 @@ sub sig_setup_save {
 # just a hack until we get named history_lists
 sub sig_window_changed {
     my($new,$old) = @_;
-    my($val) = Irssi::settings_get_bool("window_history");
     if (is_friends_window($new)) {
-	$window_history = $val;
-	Irssi::settings_set_bool("window_history", 1);
 	update_friends_window();
-    } elsif (!$old || is_friends_window($old)) {
-	Irssi::settings_set_bool("window_history", $window_history)
     }
-    Irssi::signal_emit("setup changed");
 }
 
 # ======[ Commands ]====================================================
