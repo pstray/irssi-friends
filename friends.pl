@@ -159,15 +159,11 @@ sub check_friends {
     $channel->printformat(MSGLEVEL_CLIENTCRAP, 'friends_check', "@friends")
       if @friends;
 
-    $channel->print("Status: [$channel->{chanop}]");
-
     if ($channel->{chanop}) {
 	if ($list = join " ", sort keys %op) {
-	    $channel->print("Op [$list]");
 	    $channel->command("op $list");
 	}
 	if ($list = join " ", sort keys %voice) {
-	    $channel->print("Voice [$list]");
 	    $channel->command("voice $list");
 	}
     }
