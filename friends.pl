@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.26 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.27 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -362,6 +362,31 @@ sub sig_message_public {
     }
 }
 
+# --------[ sig_message_irc_action ]------------------------------------
+
+sub sig_message_irc_action {
+    my($server, $msg, $nick, $addr, $target) = @_;
+    my($window,$theme,$friend,$oform,$nform);
+    my($channel) = $server->channel_find($target);
+
+    my($color) = Irssi::settings_get_str("friends_nick_color");
+
+    $friend = get_friend($channel, $channel->nick_find($nick));
+
+    if ($friend && $color =~ /^[rgbcmykpwRGBCMYKPWFU0-9_]$/) {
+	$window = $server->window_find_item($target);
+	$theme = $window->{theme} || Irssi::current_theme;
+
+	$oform = $nform = $theme->get_format('fe-common/irc',
+					     'action_public');
+	$nform =~ s/\$0/%$color\$0%n/g;
+
+	$window->command("^format action_public $nform");
+	Irssi::signal_continue(@_);
+	$window->command("^format action_public $oform");
+    }
+}
+
 # ======[ Commands ]====================================================
 
 # --------[ FRIENDS ]---------------------------------------------------
@@ -679,6 +704,7 @@ Irssi::signal_add('setup reread', 'sig_setup_reread');
 Irssi::signal_add('window changed', 'sig_window_changed');
 
 Irssi::signal_add_first('message public', 'sig_message_public');
+Irssi::signal_add_first('message irc action', 'sig_message_irc_action');
 
 # --------[ Register commands ]-----------------------------------------
 
