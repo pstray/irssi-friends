@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.27 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.28 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -368,6 +368,8 @@ sub sig_message_irc_action {
     my($server, $msg, $nick, $addr, $target) = @_;
     my($window,$theme,$friend,$oform,$nform);
     my($channel) = $server->channel_find($target);
+
+    return unless $channel;
 
     my($color) = Irssi::settings_get_str("friends_nick_color");
 
