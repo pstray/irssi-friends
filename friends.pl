@@ -3,7 +3,7 @@
 #
 
 use strict;
-use Irssi 20011211.0117;
+use Irssi 20011220.1429;
 use Irssi::Irc;
 use Irssi::TextUI;
 use Data::Dumper;
