@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 # ======[ Script Header ]===============================================
 
 use vars qw{$VERSION %IRSSI};
-($VERSION) = '$Revision: 1.22 $' =~ / (\d+\.\d+) /;
+($VERSION) = '$Revision: 1.23 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
@@ -483,7 +483,7 @@ sub cmd_addfriend {
 	    } else {
 		# fjekk
 	    }
-	} elsif (/^-flags$/) {
+	} elsif (/^-flags?$/) {
 	    $flags = shift @split;
 	} else {
 	    push @param, $_;
