@@ -3,14 +3,18 @@
 #
 
 use strict;
-use Irssi;
+use Irssi 20011211.0117;
 use Irssi::Irc;
 use Irssi::TextUI;
 use Data::Dumper;
 
+$Data::Dumper::Indent = 1;
+
 # ======[ Variables ]===================================================
 
-my(%friends);
+my(%friends, @friends);
+
+my $window_history;	# to save the original value
 
 # ======[ Helper functions ]============================================
 
@@ -70,6 +74,13 @@ sub save_friends {
       unless $auto;
 }
 
+# --------[ is_friends_window ]-----------------------------------------
+
+sub is_friends_window {
+    my($win) = @_;
+    return $win->{name} eq '<Friends>';
+}
+
 # --------[ get_friends_window ]----------------------------------------
 
 sub get_friends_window {
@@ -77,9 +88,12 @@ sub get_friends_window {
     if ($win) {
 	$win->set_active;
     } else {
+	$window_history = Irssi::settings_get_bool("window_history");
 	Irssi::command("/window new hide");
 	$win = Irssi::active_win;
 	$win->set_name('<Friends>');
+	Irssi::settings_set_bool("window_history", 1);
+	Irssi::signal_emit("setup changed");
     }
     return $win;
 }
@@ -152,7 +166,7 @@ sub check_friends {
 
 sub sig_send_command {
     my($win) = Irssi::active_win;
-    if ($win->{name} eq '<Friends>') {
+    if (is_friends_window($win)) {
 
 	my($cmd,@param) = split " ", $_[0];
 	$win->print("CMD: $cmd @param");
@@ -208,6 +222,21 @@ sub sig_setup_save {
     save_friends($auto);
 }
 
+# --------[ sig_window_changed ]----------------------------------------
+
+# just a hack until we get named history_lists
+sub sig_window_changed {
+    my($new,$old) = @_;
+    my($val) = Irssi::settings_get_bool("window_history");
+    if (is_friends_window($new)) {
+	$window_history = $val;
+	Irssi::settings_set_bool("window_history", 1);
+    } elsif (!$old || is_friends_window($old)) {
+	Irssi::settings_set_bool("window_history", $window_history)
+    }
+    Irssi::signal_emit("setup changed");
+}
+
 # ======[ Commands ]====================================================
 
 # --------[ FRIENDS ]---------------------------------------------------
@@ -218,52 +247,69 @@ sub cmd_friends {
     my($view) = $win->view;
     my($num) = 0;
 
-    $view->remove_all_lines();
-    $view->clear();
+    @friends = ();
     for my $mask (sort keys %friends) {
 	for my $net (sort keys %{$friends{$mask}}) {
 	    for my $channel (sort keys %{$friends{$mask}{$net}}) {
 		my $flags = join "", sort map { substr $_,0,1 }
 		  keys %{$friends{$mask}{$net}{$channel}};
-		Irssi::print(sprintf(
-				     "[%%R%02d%%n] %-30s %-15s %-15s %s",
-				     ++$num, $mask, $channel, $net, $flags
-				    ), MSGLEVEL_NEVER);
+		push @friends, [ ++$num, $mask, $channel, $net, $flags ];
 	    }
 	}
     }
+
+    $view->remove_all_lines();
+    $view->clear();
+
+    $win->printformat(MSGLEVEL_NEVER, 'friends_header',
+		      '##', 'Mask', 'Channel', 'ChatNet', 'Flags');
+    for (@friends) {
+	$win->printformat(MSGLEVEL_NEVER, 'friends_line', @$_);
+    }
+    $win->printformat(MSGLEVEL_NEVER, 'friends_footer', scalar @friends);
+
 }
 
 # --------[ ADDFRIEND ]-------------------------------------------------
 
-# Usage: /ADDFRIEND nick|mask flags [<channel>|* [<net>|*]]
-#                                   [-host|-normal|-domain|-full]
+# Usage: /ADDFRIEND <nick>|<mask> [<channel>|* [<net>|*]]
+#                                 [-mask host|normal|domain|full]
+#                                 [-flags <flags>]
 sub cmd_addfriend {
     my($param,$serv,$chan) = @_;
     my(@param,@flags);
     my($type) = Irssi::Irc::MASK_USER | Irssi::Irc::MASK_DOMAIN;
     my($mask,$flags,$channel,$net);
+    my(@split) = split " ", $param;
 
-    for (split " ", $param) {
-	if (/^-h(ost)?$/) {
-	    $type = Irssi::Irc::MASK_HOST;
-	} elsif (/^-n(ormal)?$/) {
-	    $type = Irssi::Irc::MASK_USER
-		  | Irssi::Irc::MASK_DOMAIN;
-	} elsif (/^-d(omain)?$/) {
-	    $type = Irssi::Irc::MASK_DOMAIN;
-	} elsif (/^-f(ull)?$/) {
-	    $type = Irssi::Irc::MASK_NICK
-		  | Irssi::Irc::MASK_USER
-		  | Irssi::Irc::MASK_HOST;
+    while (@split) {
+	$_ = shift;
+	if (/^-m(ask)?$/) {
+	    $_ = shift;
+	    if (/^h(ost)?$/) {
+		$type = Irssi::Irc::MASK_HOST;
+	    } elsif (/^n(ormal)?$/) {
+		$type = Irssi::Irc::MASK_USER
+		      | Irssi::Irc::MASK_DOMAIN;
+	    } elsif (/^d(omain)?$/) {
+		$type = Irssi::Irc::MASK_DOMAIN;
+	    } elsif (/^f(ull)?$/) {
+		$type = Irssi::Irc::MASK_NICK
+		      | Irssi::Irc::MASK_USER
+		      | Irssi::Irc::MASK_HOST;
+	    } else {
+		# fjekk
+	    }
+	} elsif (/^-flags$/) {
+	    $flags = shift;
 	} else {
 	    push @param, $_;
 	}
     }
-    ($mask,$flags,$channel,$net) = @param;
+    ($mask,$channel,$net) = @param;
 
     unless ($mask) {
-	crap("/ADDFRIEND [-full|-normal|-host|-domain] nick|mask [<[o][v]> [channel [chatnet]]]");
+	crap("/ADDFRIEND [-mask full|normal|host|domain] [-flags <[o][v]>] <nick|mask> [<channel> [<chatnet>]]]");
 	return;
     }
 
@@ -325,6 +371,7 @@ sub cmd_addfriend {
 	} elsif ($flag eq 'v') {
 	    $flag = 'voice';
 	} else {
+	    crap("Unknown flag [$flag]");
 	    next;
 	}
 	push @flags, $flag;
@@ -355,6 +402,15 @@ Irssi::theme_register(
  'friends_check',
  '{line_start}{hilight Friends} checked: $0',
 
+ 'friends_header',
+ '<%W$[2]0%n> <%W$[33]1%n> <%W$[13]2%n> <%W$[13]3%n> <%W$[5]4%n>',
+
+ 'friends_line',
+ '[%R$[-2]0%n] $[35]1 $[15]2 $[15]3 $[7]4',
+
+ 'friends_footer',
+ '%4 List contains $0 friends %>%n',
+
 ]);
 
 # --------[ Register signals ]------------------------------------------
@@ -367,6 +423,8 @@ Irssi::signal_add_last("channel sync", "sig_channel_sync");
 
 Irssi::signal_add('setup saved', 'sig_setup_save');
 Irssi::signal_add('setup reread', 'sig_setup_reread');
+
+Irssi::signal_add('window changed', 'sig_window_changed');
 
 # --------[ Register commands ]-----------------------------------------
 
