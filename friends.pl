@@ -160,18 +160,28 @@ sub check_friends {
     }
 }
 
+# --------[ update_friends_hash ]---------------------------------------
+
+sub update_friends_hash {
+    %friends = ();
+    for (@friends) {
+	my($num,$mask,$chan,$net,$flags) = @$_;
+	for (split //, $flags) {
+	    $friends{$mask}{$net}{$chan}{$_} = 1;
+	}
+    }
+}
+
 # --------[ update_friends_window ]-------------------------------------
 
 sub update_friends_window {
     my($win) = Irssi::window_find_name('<Friends>');
-    my($view,$num);
+    my($view);
+    my($num) = 0;
     my($mask,$net,$channel,$flags);
-    @friends = ();
 
     if ($win) {
-	$view = $win->view;
-	$num = 0;
-
+	@friends = ();
 	for $mask (sort keys %friends) {
 	    for $net (sort keys %{$friends{$mask}}) {
 		for $channel (sort keys %{$friends{$mask}{$net}}) {
@@ -182,6 +192,7 @@ sub update_friends_window {
 	    }
 	}
 
+	$view = $win->view;
 	$view->remove_all_lines();
 	$view->clear();
 	$win->printformat(MSGLEVEL_NEVER, 'friends_header',
@@ -203,40 +214,108 @@ sub sig_send_command {
 	my($cmd,$num,@param) = split " ", $_[0];
 	my($changed) = 0;
 
-	$win->print("CMD: $cmd {$num} @param");
-
 	for (lc $cmd) {
 	    s,^/,,;
 	    if (/^m(ask)?$/) {
-		unless (defined $num) {
-		    $win->print("MASK <num> <mask>", MSGLEVEL_NEVER);
+		my($mask) = @param;
+		unless ($mask && defined $num) {
+		    $win->print("Syntax: MASK <num> <mask>", MSGLEVEL_NEVER);
+		    last;
 		}
 
-		if ($num < @friends) {
-
-		} else {
-
+		unless (0 < $num && $num <= @friends) {
+		    $win->print("Error: Element $num not in list",
+				MSGLEVEL_NEVER);
+		    last;
 		}
+
+		unless ($mask =~ /^.+!.+@.+$/) {
+		    $win->print("Error: Mask $mask is not valid",
+				MSGLEVEL_NEVER);
+		    last;
+		}
+
+		$friends[$num-1][1] = $mask;
 
 	    } elsif (/^c(han(nel)?)?$/) {
+		my($chan) = @param;
+		unless ($chan && defined $num) {
+		    $win->print("Syntax: CHANNEL <num> <channel>", MSGLEVEL_NEVER);
+		    last;
+		}
 
-	    } elsif (/^(?:n(et)?|i(rc(net)?)?)$/) {
+		unless (0 < $num && $num <= @friends) {
+		    $win->print("Error: Element $num not in list",
+				MSGLEVEL_NEVER);
+		    last;
+		}
+
+		$friends[$num-1][2] = $chan;
+
+	    } elsif (/^(?:n(et)?|chat(net)?)$/) {
+		my($net) = @param;
+		unless ($net && defined $num) {
+		    $win->print("Syntax: NET <num> <net>", MSGLEVEL_NEVER);
+		    last;
+		}
+
+		unless (0 < $num && $num <= @friends) {
+		    $win->print("Error: Element $num not in list",
+				MSGLEVEL_NEVER);
+		    last;
+		}
+
+		$friends[$num-1][3] = $net;
 
 	    } elsif (/^d(el(ete)?)?$/) {
+		unless (defined $num) {
+		    $win->print("Syntax: DELETE <num>", MSGLEVEL_NEVER);
+		    last;
+		}
+
+		unless (0 < $num && $num <= @friends) {
+		    $win->print("Error: Element $num not in list",
+				MSGLEVEL_NEVER);
+		    last;
+		}
+
+		splice @friends, $num-1, 1;
 
 	    } elsif (/^f(lags?)?$/) {
+		my($flags) = @param;
+		my(%f);
+		unless (defined $num) {
+		    $win->print("Syntax: DELETE <num>", MSGLEVEL_NEVER);
+		    last;
+		}
+
+		unless (0 < $num && $num <= @friends) {
+		    $win->print("Error: Element $num not in list",
+				MSGLEVEL_NEVER);
+		    last;
+		}
+
+		$friends[$num-1][4] = join "", sort grep {!$f{$_}++}
+		  split //, $flags;
 
 	    } elsif (/^(?:e(xit)?|q(uit)?)$/) {
 		$win->destroy;
+		last;
 
 	    } else {
+		$win->print("CMD: $cmd @{[map{\"[$_]\"}$num,@param]}");
 		return;
 
 	    }
+
+	    $changed = 1;
 	}
+
 	Irssi::signal_stop;
-	update_friends_window()
-	  if $changed;
+	if ($changed) {
+	    update_friends_hash();
+	    update_friends_window();
+	}
 
     }
 }
@@ -290,6 +369,7 @@ sub sig_window_changed {
     if (is_friends_window($new)) {
 	$window_history = $val;
 	Irssi::settings_set_bool("window_history", 1);
+	update_friends_window();
     } elsif (!$old || is_friends_window($old)) {
 	Irssi::settings_set_bool("window_history", $window_history)
     }
@@ -445,7 +525,7 @@ Irssi::theme_register(
  '[%R$[-2]0%n] $[35]1 $[15]2 $[15]3 $[7]4',
 
  'friends_footer',
- '%4 List contains $0 friends %>%n',
+ "\n".'%4 List contains $0 friends %>%n',
 
 ]);
 
