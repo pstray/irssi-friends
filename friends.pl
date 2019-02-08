@@ -11,8 +11,6 @@ use Data::Dumper;
 
 $Data::Dumper::Indent = 1;
 
-# ======[ Script Header ]===============================================
-
 use vars qw{$VERSION %IRSSI};
 ($VERSION) = '$Revision: 1.34 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
@@ -24,8 +22,6 @@ use vars qw{$VERSION %IRSSI};
 	  description => 'Basicly an autoop script with a nice interface and nick coloring ;)',
 	 );
 
-# ======[ Variables ]===================================================
-
 my(%friends, @friends);
 
 my(%flagshort) = (
@@ -35,17 +31,11 @@ my(%flagshort) = (
 		 );
 my(%flaglong) = map { $flagshort{$_} => $_ } keys %flagshort;
 
-# ======[ Helper functions ]============================================
-
-# --------[ crap ]------------------------------------------------------
-
 sub crap {
     my $template = shift;
     my $msg = sprintf $template, @_;
     Irssi::printformat(MSGLEVEL_CLIENTCRAP, 'friends_crap', $msg);
 }
-
-# --------[ load_friends ]----------------------------------------------
 
 sub load_friends {
     my($file) = Irssi::get_irssi_dir."/friends";
@@ -68,8 +58,6 @@ sub load_friends {
 
     crap("Loaded $count friends from $file");
 }
-
-# --------[ save_friends ]----------------------------------------------
 
 sub save_friends {
     my($auto) = @_;
@@ -96,14 +84,10 @@ sub save_friends {
       unless $auto;
 }
 
-# --------[ is_friends_window ]-----------------------------------------
-
 sub is_friends_window {
     my($win) = @_;
     return $win->{name} eq '<Friends>';
 }
-
-# --------[ get_friends_window ]----------------------------------------
 
 sub get_friends_window {
     my($win) = Irssi::window_find_name('<Friends>');
@@ -117,8 +101,6 @@ sub get_friends_window {
     }
     return $win;
 }
-
-# --------[ get_friend ]------------------------------------------------
 
 sub get_friend {
     my($channel,$nick) = @_;
@@ -144,8 +126,6 @@ sub get_friend {
     }
     return undef;
 }
-
-# --------[ check_friends ]---------------------------------------------
 
 sub check_friends {
     my($channel, @nicks) = @_;
@@ -187,8 +167,6 @@ sub check_friends {
     }
 }
 
-# --------[ update_friends_hash ]---------------------------------------
-
 sub update_friends_hash {
     %friends = ();
     for (@friends) {
@@ -198,8 +176,6 @@ sub update_friends_hash {
 	}
     }
 }
-
-# --------[ update_friends_window ]-------------------------------------
 
 sub update_friends_window {
     my($win) = Irssi::window_find_name('<Friends>');
@@ -238,10 +214,6 @@ sub update_friends_window {
 	$win->printformat(MSGLEVEL_NEVER, 'friends_footer', scalar @friends);
     }
 }
-
-# ======[ Signal Hooks ]================================================
-
-# --------[ sig_send_command ]------------------------------------------
 
 sub sig_send_command {
     my($win) = Irssi::active_win;
@@ -291,14 +263,10 @@ sub sig_send_command {
     }
 }
 
-# --------[ sig_massjoin ]----------------------------------------------
-
 sub sig_massjoin {
     my($channel, $nicks) = @_;
     check_friends($channel, @$nicks);
 }
-
-# --------[ sig_nick_mode_changed ]-------------------------------------
 
 sub sig_nick_mode_changed {
     my($channel, $nick) = @_;
@@ -307,27 +275,19 @@ sub sig_nick_mode_changed {
     }
 }
 
-# --------[ sig_channel_sync ]------------------------------------------
-
 sub sig_channel_sync {
     my($channel) = @_;
     check_friends($channel, $channel->nicks);
 }
 
-# --------[ sig_setup_reread ]------------------------------------------
-
 sub sig_setup_reread {
     load_friends;
 }
-
-# --------[ sig_setup_save ]--------------------------------------------
 
 sub sig_setup_save {
     my($mainconf,$auto) = @_;
     save_friends($auto);
 }
-
-# --------[ sig_window_changed ]----------------------------------------
 
 sub sig_window_changed {
     my($new,$old) = @_;
@@ -335,8 +295,6 @@ sub sig_window_changed {
 	update_friends_window();
     }
 }
-
-# --------[ sig_message_public ]----------------------------------------
 
 sub sig_message_public {
     my($server, $msg, $nick, $addr, $target) = @_;
@@ -361,8 +319,6 @@ sub sig_message_public {
 	$window->command("^format pubmsg $oform");
     }
 }
-
-# --------[ sig_message_irc_action ]------------------------------------
 
 sub sig_message_irc_action {
     my($server, $msg, $nick, $addr, $target) = @_;
@@ -389,17 +345,11 @@ sub sig_message_irc_action {
     }
 }
 
-# ======[ Commands ]====================================================
-
-# --------[ FRIENDS ]---------------------------------------------------
-
 # Usage: /FRIENDS
 sub cmd_friends {
     my($win) = get_friends_window;
     update_friends_window();
 }
-
-# --------[ subcmd_friends_channel ]------------------------------------
 
 sub subcmd_friends_channel {
     my($win,$num,$chan) = @_;
@@ -419,8 +369,6 @@ sub subcmd_friends_channel {
     return 1;
 }
 
-# --------[ subcmd_friends_delete ]-------------------------------------
-
 sub subcmd_friends_delete {
     my($win,$num) = @_;
 
@@ -438,8 +386,6 @@ sub subcmd_friends_delete {
 
     return 1;
 }
-
-# --------[ subcmd_friends_flags ]--------------------------------------
 
 sub subcmd_friends_flags {
     my($win,$num,$flags) = @_;
@@ -460,8 +406,6 @@ sub subcmd_friends_flags {
 
     return 1;
 }
-
-# --------[ subcmd_friends_help ]---------------------------------------
 
 sub subcmd_friends_help {
     my($win) = @_;
@@ -491,8 +435,6 @@ sub subcmd_friends_help {
 
 }
 
-# --------[ subcmd_friends_mask ]---------------------------------------
-
 sub subcmd_friends_mask {
     my($win, $num, $mask) = @_;
 
@@ -514,8 +456,6 @@ sub subcmd_friends_mask {
 
     return 1;
 }
-
-# --------[ subcmd_friends_net ]----------------------------------------
 
 sub subcmd_friends_net {
     my($win,$num,$net) = @_;
@@ -545,8 +485,6 @@ sub subcmd_friends_net {
 
     return 1;
 }
-
-# --------[ ADDFRIEND ]-------------------------------------------------
 
 # Usage: /ADDFRIEND <nick>|<mask> [<channel>|* [<net>|*]]
 #                                 [-mask host|normal|domain|full]
@@ -658,17 +596,10 @@ sub cmd_addfriend {
     save_friends(1);
 }
 
-# ======[ Setup ]=======================================================
-
-# --------[ Register settings ]-----------------------------------------
-
 Irssi::settings_add_bool('friends', 'friends_autosave', 1);
 Irssi::settings_add_int('friends', 'friends_max_nicks', 10);
 Irssi::settings_add_bool('friends', 'friends_show_check', 1);
-
 Irssi::settings_add_str('friends', 'friends_nick_color', '');
-
-# --------[ Register formats ]------------------------------------------
 
 Irssi::theme_register(
 [
@@ -692,8 +623,6 @@ Irssi::theme_register(
 
 ]);
 
-# --------[ Register signals ]------------------------------------------
-
 Irssi::signal_add_first("send command", "sig_send_command");
 
 Irssi::signal_add_last("massjoin", "sig_massjoin");
@@ -708,20 +637,7 @@ Irssi::signal_add('window changed', 'sig_window_changed');
 Irssi::signal_add_first('message public', 'sig_message_public');
 Irssi::signal_add_first('message irc action', 'sig_message_irc_action');
 
-# --------[ Register commands ]-----------------------------------------
-
 Irssi::command_bind('friends', 'cmd_friends');
 Irssi::command_bind('addfriend', 'cmd_addfriend');
 
-# --------[ Register timers ]-------------------------------------------
-
-# --------[ Load config ]-----------------------------------------------
-
 load_friends;
-
-# ======[ END ]=========================================================
-
-# Local Variables:
-# header-initial-hide: t
-# mode: header-minor
-# end:
