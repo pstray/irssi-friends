@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2001-2004 by Peder Stray <peder@ninja.no>
+# Copyright (C) 2001-2021 by Peder Stray <peder.stray@gmail.com>
 #
 
 use strict;
@@ -7,19 +7,15 @@ use Irssi 20020427.2353;
 use Irssi::Irc;
 use Irssi::TextUI;
 
-use Data::Dumper;
-
-$Data::Dumper::Indent = 1;
-
 use vars qw{$VERSION %IRSSI};
 ($VERSION) = '$Revision: 1.34 $' =~ / (\d+\.\d+) /;
 %IRSSI = (
 	  name        => 'friends',
 	  authors     => 'Peder Stray',
-	  contact     => 'peder@ninja.no',
-	  url         => 'http://ninja.no/irssi/friends.pl',
+	  contact     => 'peder.stray@gmail.com',
+	  url         => 'https://github.com/pstray/irssi-friends',
 	  license     => 'GPL',
-	  description => 'Basicly an autoop script with a nice interface and nick coloring ;)',
+	  description => 'Basically an autoop script with a nice interface and nick coloring ;)',
 	 );
 
 my(%friends, @friends);
@@ -44,7 +40,7 @@ sub load_friends {
     local(*FILE);
 
     %friends = ();
-    open FILE, "< $file";
+    open FILE, "<", $file;
     while (<FILE>) {
 	($mask,$net,$channel,$flags) = split;
 	for (split //, $flags) {
@@ -67,7 +63,7 @@ sub save_friends {
 
     return if $auto && !Irssi::settings_get_bool('friends_autosave');
 
-    open FILE, "> $file";
+    open FILE, ">", $file;
     for my $mask (keys %friends) {
 	$count++;
 	for my $net (keys %{$friends{$mask}}) {
